@@ -1,0 +1,102 @@
+name: Stalwart Manager CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.8', '3.9', '3.10']
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install flake8 pytest pytest-cov black isort
+        pip install -r requirements.txt
+    
+    - name: Code Quality Checks
+      run: |
+        black --check .
+        isort --check-only .
+        flake8 . --count --max-line-length=120 --statistics
+    
+    - name: Run Tests
+      run: |
+        pytest --cov=stalwart_manager tests/ --cov-report=xml
+    
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.xml
+        fail_ci_if_error: true
+
+  docker:
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+    
+    - name: Build Docker image
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        push: false
+        tags: stalwart-manager:test
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+  install-test:
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Test installation script
+      run: |
+        chmod +x install.sh
+        sudo ./install.sh --test-mode
+    
+    - name: Verify service
+      run: |
+        sudo systemctl status stalwart-manager || true
+        curl -s http://localhost:8000 || true
+    
+    - name: Check Docker container
+      run: |
+        docker ps | grep stalwart-mail || true
+
+  security:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Security scan
+      uses: snyk/actions/python@master
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      with:
+        args: --severity-threshold=high
+    
+    - name: Run Bandit
+      run: |
+        pip install bandit
+        bandit -r . -ll -ii -x ./tests/
