@@ -1,0 +1,18 @@
+services:
+  stalwart-mail:
+    environment:
+    - TZ=UTC
+    image: stalwartlabs/mail-server:latest
+    ports:
+    - '25:25'
+    - 465:465
+    - 587:587
+    - 143:143
+    - 993:993
+    - 8080:8080
+    restart: unless-stopped
+    volumes:
+    - ./config:/etc/stalwart
+    - ./data:/var/lib/stalwart
+    - ./logs:/var/log/stalwart
+version: '3.8'

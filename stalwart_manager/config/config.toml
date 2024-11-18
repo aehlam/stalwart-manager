@@ -1,0 +1,99 @@
+api:
+  enabled: true
+  host: 0.0.0.0
+  port: 8080
+  auth_required: true
+  rate_limit:
+    requests_per_minute: 100
+
+imap:
+  enabled: true
+  host: 0.0.0.0
+  port: 143
+  max_connections: 50
+
+server:
+  greeting: mail.web.fedbrite.com ESMTP Stalwart
+  hostname: mail.web.fedbrite.com
+  max_message_size: 52428800
+
+smtp:
+  enabled: true
+  host: 0.0.0.0
+  port: 25
+  rate_limit:
+    connections: 50
+    messages: 100
+    recipients: 1000
+    errors: 10
+  strict_rfc: true
+  spf:
+    enabled: true
+    enforce: true
+
+submission:
+  enabled: true
+  host: 0.0.0.0
+  port: 587
+  tls_required: true
+  auth_required: true
+  rate_limit:
+    messages_per_minute: 35
+    recipients_per_message: 100
+    concurrent_connections: 10
+    throttle:
+      delay: 1000
+      messages: 1000
+
+queue:
+  retry_schedule: [5, 15, 30, 60, 120, 240, 480]
+  max_retry_time: 2880
+  max_attempts: 10
+  delivery_threads: 50
+  max_queue_size: 1000000
+  throttle_at: 500000
+
+spam:
+  dkim:
+    enabled: true
+    domains: ["web.fedbrite.com"]
+    selector: "mail"
+  require_list_unsubscribe: true
+  compliance:
+    require_physical_address: true
+    require_unsubscribe_link: true
+    max_spam_score: 5.0
+
+auth:
+  password_strength: 12
+  max_failures: 5
+  lockout_duration: 30
+
+reputation:
+  initial_score: 100
+  adjustments:
+    bounce: -10
+    complaint: -25
+    successful_delivery: 1
+  minimum_score: 50
+
+monitoring:
+  log_level: "info"
+  track_bounces: true
+  track_complaints: true
+  metrics:
+    enabled: true
+    interval: 60
+
+tls:
+  enabled: true
+  min_version: "TLS1.2"
+  cipher_suite: "MODERN"
+
+storage:
+  data_dir: /var/lib/stalwart
+  queue_dir: /var/spool/stalwart
+  backup:
+    enabled: true
+    interval: 86400
+    retain_days: 7
